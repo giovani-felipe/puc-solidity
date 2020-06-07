@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <title>Compra/Venda</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+  
+  <script src="./node_modules/web3/dist/web3.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <h1>Transferência de veículo</h1>
+  <form>
+  <div class="form-group">
+    <label for="carteiraVendedor">Carteira Vendedor</label>
+    <select id="carteiraVendedor" class="form-control">
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="carteiraComprador">Carteira Comprador</label>
+    <select id="carteiraComprador" class="form-control">
+    </select>
+  </div>  
+  
+  <div class="form-group">
+    <label for="placa">Placa:</label>
+    <input type="text" class="form-control" id="placa">
+  </div>
+  <div class="form-group">
+    <label for="marca">Marca:</label>
+    <input type="text" class="form-control" id="marca">
+  </div>
+  <div class="form-group">
+    <label for="detalhes">Detalhes:</label>
+    <input type="text" class="form-control" id="detalhes">
+  </div>
+  <div class="form-group">
+    <label for="preco">Preço:</label>
+    <input type="text" class="form-control" id="preco">
+  </div>
+  
+  <button id="btnTransferir" class="btn btn-primary">Transferir</button>
+</form>
+
+<hr/>
+
+<div id="produtos"></div>
+
+</div>
+
+<script>
+	//instancia o web3
+	if (typeof web3 !== 'undefined') {
+		console.log('Usando MetaMask');
+		web3 = new Web3(web3.currentProvider);
+	} else {
+		console.log('Usando Ganache');
+		web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+	}
+
+	//define conta padrão
+	web3.eth.defaultAccount = web3.eth.coinbase;
+
+	//ABI do contrato
+	var contractABI = web3.eth.contract([
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_placa",
+				"type": "string"
+			},
+			{
+				"name": "_marca",
+				"type": "string"
+			},
+			{
+				"name": "_detalhes",
+				"type": "string"
+			},
+			{
+				"name": "_preco",
+				"type": "uint256"
+			},
+			{
+				"name": "_tokenProp",
+				"type": "address"
+			},
+			{
+				"name": "_tokenComp",
+				"type": "address"
+			}
+		],
+		"name": "novaTransferencia",
+		"outputs": [],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getTransferenciasRealizadas",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "transferencias",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"name": "placa",
+				"type": "string"
+			},
+			{
+				"name": "marca",
+				"type": "string"
+			},
+			{
+				"name": "detalhes",
+				"type": "string"
+			},
+			{
+				"name": "preco",
+				"type": "uint256"
+			},
+			{
+				"name": "tokenProp",
+				"type": "address"
+			},
+			{
+				"name": "tokenComp",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]);
+
+	//aponta para publicado
+	var contract = contractABI.at('0xe95bd0553c9da7f2c6b154fe3f3500dea4bcd370');
+
+	//preenche carteiras para comprar
+	var accounts = web3.eth.accounts;
+	var option = '';
+	for (var i=0;i<accounts.length;i++){
+	   option += '<option value="'+ accounts[i] + '">' + accounts[i] + '</option>';
+	}
+	$('#carteiraVendedor').append(option);
+	$('#carteiraComprador').append(option);
+ 
+	//ação do botão anunciar
+	$('#btnTransferir').click(function(){
+		var placa = $('#placa').val();
+		var marca = $('#marca').val();
+		var detalhes = $('#detalhes').val();
+		var preco = web3.toWei($('#preco').val(), "ether");
+		var tokenProp = $('#carteiraVendedor').val();
+		var tokenComp = $('#carteiraComprador').val();
+
+		contract.novaTransferencia(placa, marca, detalhes, preco, tokenProp, tokenComp, 
+								   {from: $('#carteiraVendedor').val(), value:preco, gas: 3000000}, 
+								   
+								   
+		function(error, result){
+			if (!error) {
+				console.log(result);
+			} else {
+				console.log(error);
+			}
+		});		
+		
+	});
+
+</script>
+
+</body>
+</html>

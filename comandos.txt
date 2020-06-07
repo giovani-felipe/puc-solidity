@@ -1,0 +1,81 @@
+--------------------------------------------------
+
+npm init
+npm install web3@0.20.0 solc@0.4.18
+
+--------------------------------------------------
+
+node
+Web3 = require('web3')
+web3 = new Web3(new Web3.providers.HttpProvider("HTTP://127.0.0.1:7545"))
+solc = require('solc')
+sourceCode =  fs.readFileSync('TransferenciaVeiculo.sol').toString()
+compiledCode = solc.compile(sourceCode)
+contractABI = JSON.parse(compiledCode.contracts[':TransferenciaVeiculo'].interface)
+transferenciaVeiculoContract = web3.eth.contract(contractABI)
+byteCode = compiledCode.contracts[':TransferenciaVeiculo'].bytecode
+transferenciaVeiculoDeployed = transferenciaVeiculoContract.new({data:byteCode, from:web3.eth.accounts[0], gas:4700000})
+transferenciaVeiculoInstance =  transferenciaVeiculoContract.at(transferenciaVeiculoDeployed.address)
+transferenciaVeiculoDeployed.address
+
+--------------------------------------------------
+
+  struct Transferencia {
+    uint id;
+    string placa;
+    string marca;
+    string detalhes;
+    uint256 preco;
+    address tokenProp;
+    address tokenComp;
+  }
+
+  mapping (uint => Transferencia) public transferencias;
+  uint transfCounter;
+
+
+  //retorna transferencias realizadas
+  function getTransferenciasRealizadas() public view returns (uint[]) {
+    uint[] memory transferenciasIds = new uint[](transfCounter);
+
+    uint numberOfTransf = 0;
+    for(uint i = 1; i <= transfCounter; i++) {
+      if(transferencias[i].buyer == 0x0) {
+        transfIds[numberOfTransf] = transferencias[i].id;
+        numberOfTransf++;
+      }
+    }
+
+    //copia para array de itens
+    uint[] memory forSale = new uint[](numberOfTransf);
+    for(uint j = 0; j < numberOfTransf; j++) {
+      forTransf[j] = transfIds[j];
+    }
+
+    return forTransf;
+  }
+
+  function novaTransferencia(uint _id, string _placa, string _marca, string _detalhes, uint256 _preco, address _tokenProp, address _tokenComp) payable public {
+  	transfCounter++;
+    transferencias[transfCounter] = Transferencia(
+    	transfCounter,
+        _placa,
+	    _marca
+	    _detalhes
+	    _preco
+	    _tokenProp
+	    msg.sender,
+    );
+
+
+    Transferencia storage transf = transferencias[_id];
+
+    //não pode ser do próprio comprador
+    require(msg.sender != transf.tokenProp);
+
+    //atualiza comprador
+    transf.comprador = msg.sender;
+
+    //paga vendedor
+    transf.seller.transfer(msg.value);
+  }
